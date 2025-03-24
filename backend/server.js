@@ -5,8 +5,8 @@ import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { textToSpeech } from "./models/text-to-speech.js"; // Your TTS function
-import Audio from "./models/AudioModel.js"; // Import MongoDB model
+import { textToSpeech } from "./Models/text-to-speech.js"; // Your TTS function
+import Audio from "./Models/AudioModel.js"; // Import MongoDB model
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,5 +79,6 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use("/audio", express.static(audioDir));
 app.use(cors({ origin: "*" }));
 
-const PORT = 5000;
+
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
