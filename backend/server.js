@@ -75,7 +75,7 @@ app.post("/generate-audio", async (req, res) => {
     fs.writeFileSync(filePath, audioBuffer);
 
     // Construct the public URL
-    const audioUrl = `${process.env.BASE_URL}/audio/${fileName}`;
+    const audioUrl = `https://text-to-speech-hgmy.vercel.app/audio/${fileName}`;
 
     // Save in MongoDB
     const newAudio = new Audio({ text, audioUrl });
@@ -103,5 +103,5 @@ app.get("/audio-history", async (req, res) => {
 app.use("/audio", express.static(audioDir));
 
 // Server Listener
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
