@@ -5,19 +5,29 @@ import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { textToSpeech } from "./Models/text-to-speech.js"; // Your TTS function
-import Audio from "./Models/AudioModel.js"; // Import MongoDB model
-import apiRoutes from "./api/index.js";
 import dotenv from "dotenv";
+
+// Import Models & Routes
+import { textToSpeech } from "./Models/text-to-speech.js"; // Your TTS function
+import Audio from "./Models/AudioModel.js"; // MongoDB model
+import apiRoutes from "./api/index.js";
+
 dotenv.config();
 
+// Initialize Express App
+const app = express();
+
+// Define __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
-app.use(cors());
+// Middleware
+app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+// MongoDB Connection
 const mongoURI = process.env.MONGO_URL;
 if (!mongoURI) {
   console.error("❌ MONGO_URI is not defined in .env");
@@ -28,11 +38,17 @@ mongoose.connect(mongoURI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
-app.use("/api", apiRoutes); 
+// Root Route for Testing Deployment
+app.get("/", (req, res) => {
+  res.send("🚀 Backend is running!");
+});
 
 // Ensure 'public/audio' directory exists
 const audioDir = path.join(__dirname, "public", "audio");
 if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir, { recursive: true });
+
+// API Routes
+app.use("/api", apiRoutes);
 
 // 📌 Route: Generate Speech & Save Audio
 app.post("/generate-audio", async (req, res) => {
@@ -59,7 +75,7 @@ app.post("/generate-audio", async (req, res) => {
     fs.writeFileSync(filePath, audioBuffer);
 
     // Construct the public URL
-    const audioUrl = `http://localhost:5000/audio/${fileName}`;
+    const audioUrl = `${process.env.BASE_URL}/audio/${fileName}`;
 
     // Save in MongoDB
     const newAudio = new Audio({ text, audioUrl });
@@ -83,12 +99,9 @@ app.get("/audio-history", async (req, res) => {
   }
 });
 
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
 // 📌 Serve audio files publicly
 app.use("/audio", express.static(audioDir));
-app.use(cors({ origin: "*" }));
 
+// Server Listener
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
