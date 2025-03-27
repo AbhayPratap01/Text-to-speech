@@ -7,6 +7,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { textToSpeech } from "./Models/text-to-speech.js"; // Your TTS function
 import Audio from "./Models/AudioModel.js"; // Import MongoDB model
+import apiRoutes from "./api/index.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,9 +18,17 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-mongoose.connect("mongodb://127.0.0.1:27017/text-to-speech")
+const mongoURI = process.env.MONGO_URL;
+if (!mongoURI) {
+  console.error("❌ MONGO_URI is not defined in .env");
+  process.exit(1);
+}
+
+mongoose.connect(mongoURI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.error("❌ MongoDB Connection Error:", err));
+
+app.use("/api", apiRoutes); 
 
 // Ensure 'public/audio' directory exists
 const audioDir = path.join(__dirname, "public", "audio");
@@ -43,12 +54,12 @@ app.post("/generate-audio", async (req, res) => {
     console.log("✅ Audio buffer received, saving file...");
 
     // Save Audio File Locally
-    const fileName = `audio_${Date.now()}.mp3`; // ✅ Fixed backticks
+    const fileName = `audio_${Date.now()}.mp3`;
     const filePath = path.join(audioDir, fileName);
     fs.writeFileSync(filePath, audioBuffer);
 
     // Construct the public URL
-    const audioUrl = `http://localhost:5000/audio/${fileName}`; // ✅ Fixed backticks
+    const audioUrl = `http://localhost:5000/audio/${fileName}`;
 
     // Save in MongoDB
     const newAudio = new Audio({ text, audioUrl });
@@ -59,10 +70,6 @@ app.post("/generate-audio", async (req, res) => {
     console.error("❌ Error:", error);
     res.status(500).json({ error: "Failed to generate audio" });
   }
-});
-
-app.get("/", (req, res) => {
-  res.send("Backend is running!");
 });
 
 // 📌 Route: Fetch Audio History from MongoDB
